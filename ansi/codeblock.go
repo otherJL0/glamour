@@ -2,6 +2,7 @@ package ansi
 
 import (
 	"io"
+	"sync"
 
 	"github.com/alecthomas/chroma"
 	"github.com/alecthomas/chroma/quick"
@@ -13,6 +14,7 @@ import (
 type CodeBlockElement struct {
 	Code     string
 	Language string
+	mutex    sync.Mutex
 }
 
 func chromaStyle(style StylePrimitive) string {
@@ -65,6 +67,7 @@ func (e *CodeBlockElement) Render(w io.Writer, ctx RenderContext) error {
 
 	if rules.Chroma != nil && ctx.options.ColorProfile > 1 {
 		theme = "charm"
+		e.mutex.Lock()
 		// Don't register the style if it's already registered.
 		_, ok := styles.Registry[theme]
 		if !ok {
@@ -103,6 +106,7 @@ func (e *CodeBlockElement) Render(w io.Writer, ctx RenderContext) error {
 					chroma.Background:          chromaStyle(rules.Chroma.Background),
 				}))
 		}
+		e.mutex.Unlock()
 	}
 
 	iw := indent.NewWriterPipe(w, indentation+margin, func(wr io.Writer) {
